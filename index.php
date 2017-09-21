@@ -3,17 +3,28 @@
   // Set the max execution time in php.ini to something larger than 30 seconds (default)
   ini_set('max_execution_time', 500);
 
-  include('google_store_scraper.php');
+  include('./utils/google_store_scraper.php');
+  include('./utils/developer_page_parser.php');
+  include('./utils/flatten_array.php');
   
   $dataScraped = array();
+  $developerPageParser = new DeveloperPageParser();
   $scraper = new GoogleStoreScraper();
 
-  $csv = array_map('str_getcsv', file('google_play_urls.csv' , FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
+  $developerPageUrls = array_map('str_getcsv', file('./urls/developer_page_urls.csv' , FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
+  $appPageUrls = flattenArray(array_map('str_getcsv', file('./urls/app_page_urls.csv' , FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)));
 
-  foreach ($csv as $group) {
-    foreach ($group as $url) {
-      array_push($dataScraped, $scraper->fetchAndPersist($url));
-    }
+  // Fetch app page urls from developer pages
+  foreach ($developerPageUrls as $url) {
+    // Only feed in developer page urls into this class (example: https://play.google.com/store/apps/developer?id=Facebook)
+    // If app page urls are fed into it, it will grab all the linked apps from the bottom of the app page, which is not what we want
+    $newUrls = $developerPageParser->fetchAppUrlsFromDeveloperPage($url[0]);
+    $appPageUrls = array_merge($appPageUrls, $newUrls);
+  }
+
+  // Parse each app page url
+  foreach ($appPageUrls as $url) {
+    array_push($dataScraped, $scraper->fetchAndPersist($url));
   }
 
   // Clear the log file before we add the scraped app data to it
