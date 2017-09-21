@@ -1,7 +1,7 @@
 <?php
   
   // Set the max execution time in php.ini to something larger than 30 seconds (default)
-  ini_set('max_execution_time', 500);
+  ini_set('max_execution_time', 5000);
 
   include('./utils/google_store_scraper.php');
   include('./utils/developer_page_parser.php');
